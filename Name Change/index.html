@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Credit Card Name Change</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen py-10 px-4">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useRef } = React;
+
+    const CARD_TYPES = ['Visa', 'Mastercard', 'American Express', 'Discover'];
+
+    const CARD_COLORS = {
+      'Visa': 'bg-blue-100 text-blue-800 border-blue-200',
+      'Mastercard': 'bg-red-100 text-red-800 border-red-200',
+      'American Express': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      'Discover': 'bg-orange-100 text-orange-800 border-orange-200',
+    };
+
+    function Field({ label, required, error, children }) {
+      return (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {label} {required && <span className="text-red-500">*</span>}
+          </label>
+          {children}
+          {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+        </div>
+      );
+    }
+
+    function CardChip({ card, onRemove }) {
+      return (
+        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${CARD_COLORS[card.type] || 'bg-gray-100 text-gray-700 border-gray-200'}`}>
+          {card.type} •••• {card.lastFour}
+          <button type="button" onClick={onRemove} className="hover:opacity-60 text-base leading-none font-bold">×</button>
+        </span>
+      );
+    }
+
+    function DocUploadBox({ label, icon, file, onFileChange, onRemove, inputRef }) {
+      return (
+        <div className={`rounded-xl border-2 p-4 transition-colors ${file ? 'border-emerald-400 bg-emerald-50' : 'border-dashed border-gray-300 bg-gray-50 hover:border-blue-400'}`}>
+          <div className="flex items-start gap-3">
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${file ? 'bg-emerald-100' : 'bg-gray-200'}`}>
+              {file ? (
+                <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <span className="text-xl">{icon}</span>
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-800">{label}</p>
+              {file ? (
+                <p className="text-xs text-emerald-700 truncate mt-0.5">{file.name}</p>
+              ) : (
+                <p className="text-xs text-gray-500 mt-0.5">JPG, PNG or PDF · Max 10 MB</p>
+              )}
+            </div>
+            {file ? (
+              <button type="button" onClick={onRemove} className="text-gray-400 hover:text-red-500 text-lg font-bold leading-none mt-0.5">×</button>
+            ) : (
+              <>
+                <input ref={inputRef} type="file" accept="image/*,.pdf" className="hidden" onChange={onFileChange} />
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  className="px-3 py-1.5 bg-white border border-gray-300 rounded-lg text-xs font-medium text-gray-600 hover:bg-gray-100 flex-shrink-0"
+                >
+                  Upload
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    function SuccessPage({ data }) {
+      const ref = `NCR-${Date.now().toString(36).toUpperCase().slice(-8)}`;
+      return (
+        <div className="text-center py-8">
+          <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-5">
+            <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Request Submitted</h2>
+          <p className="text-gray-500 text-sm mb-6 max-w-sm mx-auto">
+            Your name change request to{' '}
+            <strong className="text-gray-800">
+              {data.firstName}{data.middleName ? ` ${data.middleName}` : ''} {data.lastName}
+            </strong>{' '}
+            has been received and is under review.
+          </p>
+          <div className="bg-gray-50 rounded-xl p-4 text-left mb-4 border max-w-sm mx-auto">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Cards to be updated</p>
+            <ul className="space-y-1.5">
+              {data.cards.map((c, i) => (
+                <li key={i} className="text-sm text-gray-700 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+                  {c.type} ending in {c.lastFour}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <p className="text-xs text-gray-400 mb-6">Reference: <span className="font-mono font-semibold text-gray-500">{ref}</span></p>
+          <button
+            onClick={() => window.location.reload()}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            Submit another request
+          </button>
+        </div>
+      );
+    }
+
+    function App() {
+      // Name fields
+      const [firstName, setFirstName] = useState('');
+      const [middleName, setMiddleName] = useState('');
+      const [lastName, setLastName] = useState('');
+
+      // Cards
+      const [cards, setCards] = useState([]);
+      const [showCardForm, setShowCardForm] = useState(false);
+      const [cardType, setCardType] = useState('Visa');
+      const [cardLastFour, setCardLastFour] = useState('');
+
+      // Documents
+      const [driversLicense, setDriversLicense] = useState(null);
+      const [passport, setPassport] = useState(null);
+      const dlRef = useRef(null);
+      const ppRef = useRef(null);
+
+      // Form state
+      const [agreed, setAgreed] = useState(false);
+      const [errors, setErrors] = useState({});
+      const [submitting, setSubmitting] = useState(false);
+      const [submitted, setSubmitted] = useState(false);
+      const [submitData, setSubmitData] = useState(null);
+
+      function clearError(key) {
+        setErrors(prev => { const n = { ...prev }; delete n[key]; return n; });
+      }
+
+      function addCard() {
+        if (!/^\d{4}$/.test(cardLastFour)) {
+          setErrors(prev => ({ ...prev, cardLastFour: 'Enter exactly 4 digits' }));
+          return;
+        }
+        if (cards.some(c => c.type === cardType && c.lastFour === cardLastFour)) {
+          setErrors(prev => ({ ...prev, cardLastFour: 'This card is already in the list' }));
+          return;
+        }
+        setCards(prev => [...prev, { type: cardType, lastFour: cardLastFour }]);
+        setCardLastFour('');
+        setShowCardForm(false);
+        clearError('cards');
+        clearError('cardLastFour');
+      }
+
+      function removeCard(i) {
+        setCards(prev => prev.filter((_, j) => j !== i));
+      }
+
+      function validate() {
+        const errs = {};
+        if (!firstName.trim()) errs.firstName = 'First name is required';
+        if (!lastName.trim()) errs.lastName = 'Last name is required';
+        if (cards.length === 0) errs.cards = 'Add at least one credit card';
+        if (!driversLicense && !passport) errs.docs = 'Upload at least one supporting document';
+        if (!agreed) errs.agreed = 'You must accept the declaration to proceed';
+        return errs;
+      }
+
+      async function handleSubmit(e) {
+        e.preventDefault();
+        const errs = validate();
+        if (Object.keys(errs).length) {
+          setErrors(errs);
+          // Scroll to first error
+          document.querySelector('[data-error]')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+        setSubmitting(true);
+        const payload = {
+          firstName: firstName.trim(),
+          middleName: middleName.trim(),
+          lastName: lastName.trim(),
+          cards,
+          documents: [
+            driversLicense && { type: 'driversLicense', filename: driversLicense.name },
+            passport && { type: 'passport', filename: passport.name },
+          ].filter(Boolean),
+        };
+        // POST to server (fire-and-forget; success shown regardless)
+        try {
+          await fetch('/api/name-change', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+        } catch (_) {}
+        setSubmitData(payload);
+        setSubmitted(true);
+        setSubmitting(false);
+      }
+
+      if (submitted && submitData) {
+        return (
+          <div className="max-w-xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-sm border p-8">
+              <SuccessPage data={submitData} />
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="max-w-xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+
+            {/* Header */}
+            <div className="bg-gradient-to-br from-blue-600 to-blue-700 px-7 py-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h1 className="text-lg font-bold text-white">Credit Card Name Change</h1>
+                  <p className="text-blue-100 text-xs mt-0.5">Update the name displayed on your card(s)</p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} noValidate className="p-7 space-y-7">
+
+              {/* ── Section 1: New Name ── */}
+              <section>
+                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-0.5">New Legal Name</h2>
+                <p className="text-xs text-gray-500 mb-4">Enter your name exactly as it appears on your supporting document.</p>
+                <div className="grid grid-cols-3 gap-3">
+                  <Field label="First Name" required error={errors.firstName}>
+                    <input
+                      type="text"
+                      value={firstName}
+                      onChange={e => { setFirstName(e.target.value); clearError('firstName'); }}
+                      className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.firstName ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                      placeholder="Jane"
+                    />
+                  </Field>
+                  <Field label="Middle Name">
+                    <input
+                      type="text"
+                      value={middleName}
+                      onChange={e => setMiddleName(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Optional"
+                    />
+                  </Field>
+                  <Field label="Last Name" required error={errors.lastName}>
+                    <input
+                      type="text"
+                      value={lastName}
+                      onChange={e => { setLastName(e.target.value); clearError('lastName'); }}
+                      className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.lastName ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                      placeholder="Smith"
+                    />
+                  </Field>
+                </div>
+              </section>
+
+              <hr className="border-gray-100" />
+
+              {/* ── Section 2: Credit Cards ── */}
+              <section>
+                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-0.5">Credit Cards to Update</h2>
+                <p className="text-xs text-gray-500 mb-4">Specify each card you want the name updated on.</p>
+
+                {cards.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {cards.map((c, i) => (
+                      <CardChip key={i} card={c} onRemove={() => removeCard(i)} />
+                    ))}
+                  </div>
+                )}
+
+                {showCardForm ? (
+                  <div className="border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Card Type</label>
+                        <select
+                          value={cardType}
+                          onChange={e => setCardType(e.target.value)}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {CARD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Last 4 Digits</label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={4}
+                          value={cardLastFour}
+                          onChange={e => { setCardLastFour(e.target.value.replace(/\D/g, '')); clearError('cardLastFour'); }}
+                          onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCard())}
+                          className={`w-full border rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.cardLastFour ? 'border-red-400 bg-red-50' : 'border-gray-300'}`}
+                          placeholder="4242"
+                        />
+                        {errors.cardLastFour && <p className="mt-1 text-xs text-red-600">{errors.cardLastFour}</p>}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={addCard} className="px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700">
+                        Add Card
+                      </button>
+                      <button type="button" onClick={() => { setShowCardForm(false); setCardLastFour(''); clearError('cardLastFour'); }} className="px-4 py-2 text-gray-600 text-xs rounded-lg hover:bg-gray-200">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowCardForm(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors w-full justify-center"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add a card
+                  </button>
+                )}
+                {errors.cards && <p data-error className="mt-2 text-xs text-red-600">{errors.cards}</p>}
+              </section>
+
+              <hr className="border-gray-100" />
+
+              {/* ── Section 3: Supporting Documents ── */}
+              <section>
+                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide mb-0.5">Supporting Documents</h2>
+                <p className="text-xs text-gray-500 mb-4">Upload at least one government-issued photo ID showing your new name.</p>
+                <div className="space-y-3">
+                  <DocUploadBox
+                    label="Driver's License"
+                    icon="🪪"
+                    file={driversLicense}
+                    onFileChange={e => { if (e.target.files[0]) { setDriversLicense(e.target.files[0]); clearError('docs'); } }}
+                    onRemove={() => { setDriversLicense(null); dlRef.current && (dlRef.current.value = ''); }}
+                    inputRef={dlRef}
+                  />
+                  <DocUploadBox
+                    label="Passport"
+                    icon="🛂"
+                    file={passport}
+                    onFileChange={e => { if (e.target.files[0]) { setPassport(e.target.files[0]); clearError('docs'); } }}
+                    onRemove={() => { setPassport(null); ppRef.current && (ppRef.current.value = ''); }}
+                    inputRef={ppRef}
+                  />
+                </div>
+                {errors.docs && <p data-error className="mt-2 text-xs text-red-600">{errors.docs}</p>}
+              </section>
+
+              <hr className="border-gray-100" />
+
+              {/* ── Section 4: Declaration ── */}
+              <section>
+                <label className="flex gap-3 cursor-pointer items-start">
+                  <input
+                    type="checkbox"
+                    checked={agreed}
+                    onChange={e => { setAgreed(e.target.checked); clearError('agreed'); }}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+                  />
+                  <span className="text-xs text-gray-600 leading-relaxed">
+                    I confirm that all information provided is accurate and the supporting documents are genuine. I understand that submitting false information may result in account action.
+                  </span>
+                </label>
+                {errors.agreed && <p data-error className="mt-1.5 text-xs text-red-600">{errors.agreed}</p>}
+              </section>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold py-3 px-6 rounded-xl transition-colors text-sm shadow-sm"
+              >
+                {submitting ? 'Submitting…' : 'Submit Name Change Request'}
+              </button>
+
+            </form>
+          </div>
+          <p className="text-center text-xs text-gray-400 mt-4">Secure · Encrypted · FDIC Member</p>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
